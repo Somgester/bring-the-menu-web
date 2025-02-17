@@ -93,7 +93,7 @@ export default function Home() {
             <Card>
               <CardHeader>
                 <CardTitle>2. Generate QR Codes</CardTitle>
-                <CardDescription>Create unique QR codes for each table in your restaurant</CardDescription>
+                <CardDescription>Create unique QR codes for each table in your restaurant&apos;s branding</CardDescription>
               </CardHeader>
               <CardContent>
                 <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-primary text-white">
@@ -181,7 +181,7 @@ export default function Home() {
                 <ChevronRight className="ml-2 h-4 w-4" />
               </Button>
               <p className="text-xs text-gray-500 dark:text-gray-400">
-                By creating an account, you agree to our Terms & Conditions and Privacy Policy
+                By creating an account, you agree to our Terms &amp; Conditions and Privacy Policy
               </p>
             </form>
           </div>
