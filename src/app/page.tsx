@@ -10,15 +10,7 @@ export default function Home() {
     <div className="flex flex-col min-h-screen">
     <header className="px-4 lg:px-6 h-16 flex items-center">
       <Link className="flex items-center justify-center" href="#">
-        {/* <QrCode className="h-6 w-6" /> */}
-        {/* <Image
-              alt="MENU"
-              
-              className="mx-auto aspect-video overflow-hidden rounded-xl object-cover object-center sm:w-full lg:order-last"
-              height="24"
-              src="/menu.png"
-              width="24"
-            /> */}
+   
         <span className="ml-2 text-lg font-bold font-serif">Bring The Menu</span>
       </Link>
       <nav className="ml-auto flex gap-4 sm:gap-6">
