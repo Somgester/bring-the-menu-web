@@ -7,9 +7,7 @@ import {
   Utensils,
   Clock,
   CreditCard,
-  Menu,
-  MenuSquare,
-  Notebook,
+  
 } from "lucide-react";
 import Link from "next/link";
 import Image from "next/image";
@@ -51,12 +49,6 @@ export default function Home() {
             className="text-sm font-medium hover:underline underline-offset-4"
           >
             How it Works
-          </button>
-          <button
-            onClick={() => scrollToSection("contact")}
-            className="text-sm font-medium hover:underline underline-offset-4"
-          >
-            Contact
           </button>
           <button
             onClick={() => scrollToSection("register")}
@@ -104,6 +96,7 @@ export default function Home() {
                   height="310"
                   src="/cover.webp"
                   width="550"
+                  priority // Add this line to fix LCP warning
                 />
               </div>
             </div>
