@@ -9,6 +9,7 @@ console.log(subdomain);
   if (subdomain !== "www" && subdomain !== "bringthemenu" && subdomain !== "localhost:3000") {
     // Redirect requests to /restaurant/[subdomain]
     url.pathname = `/restaurant/${subdomain}${url.pathname}`;
+    
     return NextResponse.rewrite(url);
   }
 
