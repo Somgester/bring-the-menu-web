@@ -92,7 +92,7 @@ export default function MenuPage() {
   const [vegOnly, setVegOnly] = useState(false)
   const [expandedItems, setExpandedItems] = useState<number[]>([])
   const [cart, setCart] = useState<CartItem[]>([])
-  const [isPlateVisible, setIsPlateVisible] = useState(false)
+  const [isPlateExpanded, setIsPlateExpanded] = useState(false)
 
   const toggleDescription = (id: number) => {
     setExpandedItems((prev) => (prev.includes(id) ? prev.filter((item) => item !== id) : [...prev, id]))
@@ -108,7 +108,6 @@ export default function MenuPage() {
       }
       return [...prev, { ...item, quantity: 1 }]
     })
-    setIsPlateVisible(true)
   }
 
   const updateQuantity = (id: number, delta: number) => {
@@ -118,7 +117,7 @@ export default function MenuPage() {
         .filter((item) => item.quantity > 0)
 
       if (newCart.length === 0) {
-        setIsPlateVisible(false)
+        setIsPlateExpanded(false)
       }
       return newCart
     })
@@ -128,7 +127,7 @@ export default function MenuPage() {
     setCart((prev) => {
       const newCart = prev.filter((item) => item.id !== id)
       if (newCart.length === 0) {
-        setIsPlateVisible(false)
+        setIsPlateExpanded(false)
       }
       return newCart
     })
@@ -230,90 +229,116 @@ export default function MenuPage() {
       </Tabs>
 
       <AnimatePresence>
-        {isPlateVisible && (
-          <motion.div
-            initial={{ y: 100, opacity: 0 }}
-            animate={{ y: 0, opacity: 1 }}
-            exit={{ y: 100, opacity: 0 }}
-            className="fixed bottom-0 left-0 right-0 bg-background border-t shadow-lg"
-          >
-            <div className="container mx-auto p-4">
-              <div className="flex items-center justify-between mb-4">
-                <div className="flex items-center gap-2">
-                  <ShoppingBag className="h-5 w-5" />
-                  <span className="font-semibold">Your Plate ({totalItems} items)</span>
-                </div>
-                <span className="font-bold text-lg">Total: ${totalAmount.toFixed(2)}</span>
-              </div>
+        {cart.length > 0 && (
+          <>
+            {isPlateExpanded ? (
+              <motion.div
+                initial={{ y: 100, opacity: 0 }}
+                animate={{ y: 0, opacity: 1 }}
+                exit={{ y: 100, opacity: 0 }}
+                className="fixed bottom-0 left-0 right-0 bg-background border-t shadow-lg z-50"
+              >
+                <div className="container mx-auto p-4">
+                  <div className="flex items-center justify-between mb-4">
+                    <div className="flex items-center gap-2">
+                      <ShoppingBag className="h-5 w-5" />
+                      <span className="font-semibold">Your Plate ({totalItems} items)</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className="font-bold text-lg">Total: ${totalAmount.toFixed(2)}</span>
+                      <Button variant="ghost" size="icon" onClick={() => setIsPlateExpanded(false)} className="h-8 w-8">
+                        <X className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </div>
 
-              <ScrollArea className="h-[200px]">
-                <div className="space-y-4">
-                  {cart.map((item) => (
-                    <motion.div
-                      key={item.id}
-                      layout
-                      initial={{ opacity: 0, y: 20 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      exit={{ opacity: 0, y: 20 }}
-                      className="flex items-center justify-between gap-4 bg-muted/50 p-3 rounded-lg"
-                    >
-                      <div className="flex items-center gap-3">
-                        <Image
-                          src={item.image || "/placeholder.svg"}
-                          alt={item.name}
-                          width={48}
-                          height={48}
-                          className="rounded-md object-cover"
-                        />
-                        <div>
-                          <h4 className="font-medium">{item.name}</h4>
-                          <p className="text-sm text-muted-foreground">
-                            ${item.price} x {item.quantity} = ${(item.price * item.quantity).toFixed(2)}
-                          </p>
-                        </div>
-                      </div>
-
-                      <div className="flex items-center gap-2">
-                        <div className="flex items-center gap-1 bg-background rounded-lg border">
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="h-8 w-8"
-                            onClick={() => updateQuantity(item.id, -1)}
-                          >
-                            <Minus className="h-4 w-4" />
-                          </Button>
-                          <span className="w-8 text-center">{item.quantity}</span>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="h-8 w-8"
-                            onClick={() => updateQuantity(item.id, 1)}
-                          >
-                            <Plus className="h-4 w-4" />
-                          </Button>
-                        </div>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="h-8 w-8 text-destructive"
-                          onClick={() => removeFromCart(item.id)}
+                  <ScrollArea className="h-[200px]">
+                    <div className="space-y-4">
+                      {cart.map((item) => (
+                        <motion.div
+                          key={item.id}
+                          layout
+                          initial={{ opacity: 0, y: 20 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          exit={{ opacity: 0, y: 20 }}
+                          className="flex items-center justify-between gap-4 bg-muted/50 p-3 rounded-lg"
                         >
-                          <X className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    </motion.div>
-                  ))}
-                </div>
-              </ScrollArea>
+                          <div className="flex items-center gap-3">
+                            <Image
+                              src={item.image || "/placeholder.svg"}
+                              alt={item.name}
+                              width={48}
+                              height={48}
+                              className="rounded-md object-cover"
+                            />
+                            <div>
+                              <h4 className="font-medium">{item.name}</h4>
+                              <p className="text-sm text-muted-foreground">
+                                ${item.price} x {item.quantity} = ${(item.price * item.quantity).toFixed(2)}
+                              </p>
+                            </div>
+                          </div>
 
-              <div className="mt-4">
-                <Button className="w-full" size="lg">
-                  Proceed to Checkout
-                </Button>
-              </div>
-            </div>
-          </motion.div>
+                          <div className="flex items-center gap-2">
+                            <div className="flex items-center gap-1 bg-background rounded-lg border">
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-8 w-8"
+                                onClick={() => updateQuantity(item.id, -1)}
+                              >
+                                <Minus className="h-4 w-4" />
+                              </Button>
+                              <span className="w-8 text-center">{item.quantity}</span>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-8 w-8"
+                                onClick={() => updateQuantity(item.id, 1)}
+                              >
+                                <Plus className="h-4 w-4" />
+                              </Button>
+                            </div>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-8 w-8 text-destructive"
+                              onClick={() => removeFromCart(item.id)}
+                            >
+                              <X className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        </motion.div>
+                      ))}
+                    </div>
+                  </ScrollArea>
+
+                  <div className="mt-4">
+                    <Button className="w-full" size="lg">
+                      Proceed to Checkout
+                    </Button>
+                  </div>
+                </div>
+              </motion.div>
+            ) : (
+              <motion.div
+                initial={{ scale: 0.8, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                exit={{ scale: 0.8, opacity: 0 }}
+                onClick={() => setIsPlateExpanded(true)}
+                className="fixed bottom-6 right-6 cursor-pointer"
+              >
+                <div className="relative inline-flex">
+                  <Button size="lg" className="rounded-full h-14 w-14 shadow-lg">
+                    <ShoppingBag className="h-6 w-6" />
+                  </Button>
+                  <span className="absolute -top-2 -right-2 bg-primary text-primary-foreground rounded-full h-6 w-6 flex items-center justify-center text-sm font-medium">
+                    {totalItems}
+                  </span>
+                </div>
+              </motion.div>
+            )}
+          </>
         )}
       </AnimatePresence>
     </div>
