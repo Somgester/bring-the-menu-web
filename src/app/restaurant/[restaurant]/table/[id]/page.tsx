@@ -1,104 +1,89 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import Image from "next/image"
-import { Leaf, Beef, ChevronDown, ChevronUp, Plus, Minus, X, ShoppingBag } from "lucide-react"
+import { Leaf, Beef, ChevronDown, ChevronUp, Plus, Minus, X, ShoppingBag, Loader2 } from "lucide-react"
 import { AnimatePresence, motion } from "framer-motion"
+import { useParams } from "next/navigation"
 
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Toggle } from "@/components/ui/toggle"
 import { ScrollArea } from "@/components/ui/scroll-area"
+import { getMenuItems, MenuItem as DBMenuItem } from "@/lib/firebase/firestore"
+import { createOrder } from "@/lib/firebase/firestore"
+import { toast } from "sonner"
 
 interface MenuItem {
-  id: number
+  id: string
   name: string
   description: string
   price: number
   image: string
   isVeg: boolean
   category: string
+  available: boolean
 }
 
 interface CartItem extends MenuItem {
   quantity: number
 }
 
-const menuItems: MenuItem[] = [
-  {
-    id: 1,
-    name: "Margherita Pizza",
-    description:
-      "Fresh tomatoes, mozzarella, basil, and our signature olive oil. Made with love using traditional Italian techniques and the finest ingredients. Our classic Margherita pizza is a tribute to the original pizza created in Naples.",
-    price: 12.99,
-    image: "/placeholder.svg",
-    isVeg: true,
-    category: "pizzas",
-  },
-  {
-    id: 2,
-    name: "Pepperoni Pizza",
-    description:
-      "Classic pepperoni with mozzarella and our special tomato sauce. Each slice is loaded with premium pepperoni that creates the perfect combination of spicy and savory.",
-    price: 14.99,
-    image: "/placeholder.svg",
-    isVeg: false,
-    category: "pizzas",
-  },
-  {
-    id: 3,
-    name: "Garlic Bread",
-    description:
-      "Freshly baked bread with garlic butter and herbs. Topped with melted mozzarella cheese and served with a side of marinara sauce.",
-    price: 5.99,
-    image: "/placeholder.svg",
-    isVeg: true,
-    category: "starters",
-  },
-  {
-    id: 4,
-    name: "Spaghetti Carbonara",
-    description:
-      "Classic Roman pasta with eggs, pecorino cheese, pancetta, and black pepper. Made fresh to order with authentic Italian ingredients.",
-    price: 16.99,
-    image: "/placeholder.svg",
-    isVeg: false,
-    category: "pasta",
-  },
-  {
-    id: 5,
-    name: "Tiramisu",
-    description:
-      "Traditional Italian dessert with layers of coffee-soaked ladyfingers and mascarpone cream. Dusted with premium cocoa powder.",
-    price: 7.99,
-    image: "/placeholder.svg",
-    isVeg: true,
-    category: "desserts",
-  },
-  {
-    id: 6,
-    name: "Italian Wine",
-    description:
-      "Premium Italian red wine, perfect complement to your meal. Sourced from renowned vineyards in Tuscany.",
-    price: 8.99,
-    image: "/placeholder.svg",
-    isVeg: true,
-    category: "beverages",
-  },
-]
-
 export default function MenuPage() {
+  const params = useParams()
+  const restaurantId = params.restaurant as string
+  const tableNumber = params.id as string
+
+  const [menuItems, setMenuItems] = useState<MenuItem[]>([])
+  const [loading, setLoading] = useState(true)
   const [vegOnly, setVegOnly] = useState(false)
-  const [expandedItems, setExpandedItems] = useState<number[]>([])
+  const [expandedItems, setExpandedItems] = useState<string[]>([])
   const [cart, setCart] = useState<CartItem[]>([])
   const [isPlateExpanded, setIsPlateExpanded] = useState(false)
+  const [placingOrder, setPlacingOrder] = useState(false)
 
-  const toggleDescription = (id: number) => {
+  // Load menu items from database
+  useEffect(() => {
+    if (!restaurantId) return
+
+    const loadMenuItems = async () => {
+      try {
+        setLoading(true)
+        const dbItems = await getMenuItems(restaurantId)
+        const items: MenuItem[] = dbItems
+          .filter((item) => item.available) // Only show available items
+          .map((item) => ({
+            id: item.id,
+            name: item.name,
+            description: item.description || "",
+            price: item.price,
+            image: item.imageUrl || "/placeholder.svg",
+            isVeg: item.isVegetarian || false,
+            category: item.category,
+            available: item.available,
+          }))
+        setMenuItems(items)
+      } catch (error) {
+        console.error("Error loading menu items:", error)
+        toast.error("Failed to load menu")
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    loadMenuItems()
+  }, [restaurantId])
+
+  const toggleDescription = (id: string) => {
     setExpandedItems((prev) => (prev.includes(id) ? prev.filter((item) => item !== id) : [...prev, id]))
   }
 
   const addToCart = (item: MenuItem) => {
+    if (!item.available) {
+      toast.error("This item is currently unavailable")
+      return
+    }
     setCart((prev) => {
       const existingItem = prev.find((cartItem) => cartItem.id === item.id)
       if (existingItem) {
@@ -108,9 +93,10 @@ export default function MenuPage() {
       }
       return [...prev, { ...item, quantity: 1 }]
     })
+    toast.success(`${item.name} added to cart`)
   }
 
-  const updateQuantity = (id: number, delta: number) => {
+  const updateQuantity = (id: string, delta: number) => {
     setCart((prev) => {
       const newCart = prev
         .map((item) => (item.id === id ? { ...item, quantity: Math.max(0, item.quantity + delta) } : item))
@@ -123,7 +109,7 @@ export default function MenuPage() {
     })
   }
 
-  const removeFromCart = (id: number) => {
+  const removeFromCart = (id: string) => {
     setCart((prev) => {
       const newCart = prev.filter((item) => item.id !== id)
       if (newCart.length === 0) {
@@ -133,15 +119,70 @@ export default function MenuPage() {
     })
   }
 
+  const handlePlaceOrder = async () => {
+    if (cart.length === 0) {
+      toast.error("Your cart is empty")
+      return
+    }
+
+    if (!restaurantId || !tableNumber) {
+      toast.error("Invalid restaurant or table number")
+      return
+    }
+
+    try {
+      setPlacingOrder(true)
+      const orderItems = cart.map((item) => ({
+        menuItemId: item.id,
+        name: item.name,
+        price: item.price,
+        quantity: item.quantity,
+      }))
+
+      const total = cart.reduce((sum, item) => sum + item.price * item.quantity, 0)
+
+      await createOrder({
+        restaurantId,
+        tableNumber,
+        items: orderItems,
+        total,
+        status: "pending",
+      })
+
+      toast.success("Order placed successfully!")
+      setCart([])
+      setIsPlateExpanded(false)
+    } catch (error) {
+      console.error("Error placing order:", error)
+      toast.error("Failed to place order. Please try again.")
+    } finally {
+      setPlacingOrder(false)
+    }
+  }
+
   const totalAmount = cart.reduce((sum, item) => sum + item.price * item.quantity, 0)
   const totalItems = cart.reduce((sum, item) => sum + item.quantity, 0)
 
   const filteredItems = vegOnly ? menuItems.filter((item) => item.isVeg) : menuItems
 
+  // Get unique categories from menu items
+  const categories = Array.from(new Set(menuItems.map((item) => item.category)))
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <Loader2 className="h-8 w-8 animate-spin text-gray-400" />
+      </div>
+    )
+  }
+
   return (
     <div className="container mx-auto py-8 px-4 pb-32">
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8">
-        <h1 className="text-3xl font-bold">Our Menu</h1>
+        <div>
+          <h1 className="text-3xl font-bold">Our Menu</h1>
+          <p className="text-muted-foreground mt-1">Table {tableNumber}</p>
+        </div>
         <div className="flex items-center gap-2">
           <span className="text-sm font-medium">Veg Only</span>
           <Toggle pressed={vegOnly} onPressedChange={setVegOnly} aria-label="Toggle veg only">
@@ -150,83 +191,93 @@ export default function MenuPage() {
         </div>
       </div>
 
-      <Tabs defaultValue="pizzas" className="w-full">
-        <ScrollArea className="w-full">
-          <TabsList className="w-full justify-start">
-            <TabsTrigger value="pizzas">Pizzas</TabsTrigger>
-            <TabsTrigger value="starters">Starters</TabsTrigger>
-            <TabsTrigger value="pasta">Pasta</TabsTrigger>
-            <TabsTrigger value="desserts">Desserts</TabsTrigger>
-            <TabsTrigger value="beverages">Beverages</TabsTrigger>
-          </TabsList>
-        </ScrollArea>
+      {menuItems.length === 0 ? (
+        <div className="text-center py-12">
+          <p className="text-muted-foreground">No menu items available at the moment.</p>
+        </div>
+      ) : (
+        <Tabs defaultValue={categories[0] || ""} className="w-full">
+          <ScrollArea className="w-full">
+            <TabsList className="w-full justify-start">
+              {categories.map((category) => (
+                <TabsTrigger key={category} value={category}>
+                  {category.charAt(0).toUpperCase() + category.slice(1)}
+                </TabsTrigger>
+              ))}
+            </TabsList>
+          </ScrollArea>
 
-        {["pizzas", "starters", "pasta", "desserts", "beverages"].map((category) => (
-          <TabsContent key={category} value={category}>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {filteredItems
-                .filter((item) => item.category === category)
-                .map((item) => (
-                  <div key={item.id} className="border rounded-lg p-4 space-y-4">
-                    <div className="relative aspect-video">
-                      <Image
-                        src={item.image || "/placeholder.svg"}
-                        alt={item.name}
-                        fill
-                        className="rounded-md object-cover"
-                      />
-                      <Badge variant="secondary" className="absolute top-2 left-2">
-                        {item.isVeg ? (
-                          <Leaf className="h-4 w-4 text-green-500" />
-                        ) : (
-                          <Beef className="h-4 w-4 text-red-500" />
-                        )}
-                      </Badge>
-                    </div>
-
-                    <div className="space-y-2">
-                      <div className="flex justify-between items-start">
-                        <h3 className="font-semibold">{item.name}</h3>
-                        <span className="font-bold">${item.price}</span>
+          {categories.map((category) => (
+            <TabsContent key={category} value={category}>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {filteredItems
+                  .filter((item) => item.category === category)
+                  .map((item) => (
+                    <div key={item.id} className="border rounded-lg p-4 space-y-4">
+                      <div className="relative aspect-video">
+                        <Image
+                          src={item.image || "/placeholder.svg"}
+                          alt={item.name}
+                          fill
+                          className="rounded-md object-cover"
+                        />
+                        <Badge variant="secondary" className="absolute top-2 left-2">
+                          {item.isVeg ? (
+                            <Leaf className="h-4 w-4 text-green-500" />
+                          ) : (
+                            <Beef className="h-4 w-4 text-red-500" />
+                          )}
+                        </Badge>
                       </div>
 
                       <div className="space-y-2">
-                        <p
-                          className={`text-sm text-muted-foreground ${!expandedItems.includes(item.id) && "line-clamp-2"}`}
-                        >
-                          {item.description}
-                        </p>
-                        {item.description.length > 100 && (
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            className="p-0 h-auto font-medium"
-                            onClick={() => toggleDescription(item.id)}
-                          >
-                            {expandedItems.includes(item.id) ? (
-                              <span className="flex items-center">
-                                Read less <ChevronUp className="ml-1 h-4 w-4" />
-                              </span>
-                            ) : (
-                              <span className="flex items-center">
-                                Read more <ChevronDown className="ml-1 h-4 w-4" />
-                              </span>
-                            )}
-                          </Button>
-                        )}
-                      </div>
+                        <div className="flex justify-between items-start">
+                          <h3 className="font-semibold">{item.name}</h3>
+                          <span className="font-bold">${item.price.toFixed(2)}</span>
+                        </div>
 
-                      <Button className="w-full" onClick={() => addToCart(item)}>
-                        <Plus className="mr-2 h-4 w-4" />
-                        Add to plate
-                      </Button>
+                        <div className="space-y-2">
+                          <p
+                            className={`text-sm text-muted-foreground ${!expandedItems.includes(item.id) && "line-clamp-2"}`}
+                          >
+                            {item.description}
+                          </p>
+                          {item.description.length > 100 && (
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="p-0 h-auto font-medium"
+                              onClick={() => toggleDescription(item.id)}
+                            >
+                              {expandedItems.includes(item.id) ? (
+                                <span className="flex items-center">
+                                  Read less <ChevronUp className="ml-1 h-4 w-4" />
+                                </span>
+                              ) : (
+                                <span className="flex items-center">
+                                  Read more <ChevronDown className="ml-1 h-4 w-4" />
+                                </span>
+                              )}
+                            </Button>
+                          )}
+                        </div>
+
+                        <Button
+                          className="w-full"
+                          onClick={() => addToCart(item)}
+                          disabled={!item.available}
+                        >
+                          <Plus className="mr-2 h-4 w-4" />
+                          {item.available ? "Add to plate" : "Unavailable"}
+                        </Button>
+                      </div>
                     </div>
-                  </div>
-                ))}
-            </div>
-          </TabsContent>
-        ))}
-      </Tabs>
+                  ))}
+              </div>
+            </TabsContent>
+          ))}
+        </Tabs>
+      )}
 
       <AnimatePresence>
         {cart.length > 0 && (
@@ -274,7 +325,7 @@ export default function MenuPage() {
                             <div>
                               <h4 className="font-medium">{item.name}</h4>
                               <p className="text-sm text-muted-foreground">
-                                ${item.price} x {item.quantity} = ${(item.price * item.quantity).toFixed(2)}
+                                ${item.price.toFixed(2)} x {item.quantity} = ${(item.price * item.quantity).toFixed(2)}
                               </p>
                             </div>
                           </div>
@@ -314,8 +365,20 @@ export default function MenuPage() {
                   </ScrollArea>
 
                   <div className="mt-4">
-                    <Button className="w-full" size="lg">
-                      Proceed to Checkout
+                    <Button
+                      className="w-full"
+                      size="lg"
+                      onClick={handlePlaceOrder}
+                      disabled={placingOrder || cart.length === 0}
+                    >
+                      {placingOrder ? (
+                        <>
+                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                          Placing Order...
+                        </>
+                      ) : (
+                        "Place Order"
+                      )}
                     </Button>
                   </div>
                 </div>
@@ -344,4 +407,3 @@ export default function MenuPage() {
     </div>
   )
 }
-

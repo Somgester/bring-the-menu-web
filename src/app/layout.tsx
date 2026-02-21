@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import { Analytics } from "@vercel/analytics/react"
+import { AuthProvider } from "@/contexts/AuthContext";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -20,6 +21,7 @@ export const viewport: Viewport = {
 };
 
 export const metadata: Metadata = {
+  metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL || "https://bringthemenu.com"),
   title: "Bring the Menu - Digital Menu Service for Restaurants",
   description: "Transform your restaurant with digital QR code menus, real-time ordering, and instant notifications. Modern solution for restaurants, bars, and cafes.",
   keywords: "digital menu, restaurant QR code, online ordering, restaurant management, digital ordering system",
@@ -79,10 +81,11 @@ export default function RootLayout({
         />
       </head>
       <body
-      
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
-        {children}
+        <AuthProvider>
+          {children}
+        </AuthProvider>
       </body>
     </html>
   );

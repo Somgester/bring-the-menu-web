@@ -53,7 +53,7 @@ export default function RestaurantPage({
             {/* <Link href="/dashboard"> */}
             <Button
               onClick={() => {
-                router.push("/dashboard");
+                router.push("/");
               }}
             >
               Login
