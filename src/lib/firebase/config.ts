@@ -57,6 +57,13 @@ let app: FirebaseApp | null = null;
 
 function getFirebaseApp(): FirebaseApp {
   if (!app) {
+    // Only validate and initialize if Firebase is configured
+    if (!isFirebaseConfigured()) {
+      // Don't throw error, just log warning
+      console.warn("Firebase configuration is incomplete. Some features may not work.");
+      throw new Error("Firebase not configured");
+    }
+    
     validateConfig();
     
     if (getApps().length === 0) {
@@ -68,28 +75,69 @@ function getFirebaseApp(): FirebaseApp {
   return app;
 }
 
+// Helper function to check if Firebase is configured (exported for use in components)
+export function isFirebaseConfigured(): boolean {
+  return !!(
+    firebaseConfig.apiKey &&
+    firebaseConfig.authDomain &&
+    firebaseConfig.projectId &&
+    firebaseConfig.storageBucket &&
+    firebaseConfig.messagingSenderId &&
+    firebaseConfig.appId
+  );
+}
+
 // Initialize services lazily
 let authInstance: Auth | null = null;
 let dbInstance: Firestore | null = null;
 let storageInstance: FirebaseStorage | null = null;
 
 export const auth: Auth = (() => {
+  if (!isFirebaseConfigured()) {
+    // Create a minimal mock auth object to prevent errors
+    // AuthContext will check Firebase config before using it
+    console.warn("Firebase not configured - creating mock auth object");
+    // Return a minimal object that satisfies the Auth interface
+    // This prevents module initialization errors
+    return {} as Auth;
+  }
   if (!authInstance) {
-    authInstance = getAuth(getFirebaseApp());
+    try {
+      authInstance = getAuth(getFirebaseApp());
+    } catch (error) {
+      console.error("Failed to initialize Firebase Auth:", error);
+      return {} as Auth;
+    }
   }
   return authInstance;
 })();
 
 export const db: Firestore = (() => {
+  if (!isFirebaseConfigured()) {
+    return null as unknown as Firestore;
+  }
   if (!dbInstance) {
-    dbInstance = getFirestore(getFirebaseApp());
+    try {
+      dbInstance = getFirestore(getFirebaseApp());
+    } catch (error) {
+      console.error("Failed to initialize Firestore:", error);
+      return null as unknown as Firestore;
+    }
   }
   return dbInstance;
 })();
 
 export const storage: FirebaseStorage = (() => {
+  if (!isFirebaseConfigured()) {
+    return null as unknown as FirebaseStorage;
+  }
   if (!storageInstance) {
-    storageInstance = getStorage(getFirebaseApp());
+    try {
+      storageInstance = getStorage(getFirebaseApp());
+    } catch (error) {
+      console.error("Failed to initialize Firebase Storage:", error);
+      return null as unknown as FirebaseStorage;
+    }
   }
   return storageInstance;
 })();

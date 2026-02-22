@@ -1,12 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
 
-export function proxy(req: NextRequest) {
+export function middleware(req: NextRequest) {
   const url = req.nextUrl.clone();
   const host = req.headers.get("host") ?? "";
   
   // Skip proxy for static files (images, fonts, etc.)
   const pathname = url.pathname;
-  const staticFileExtensions = /\.(jpg|jpeg|gif|png|svg|ico|webp|woff|woff2|ttf|eot|css|js|map)$/i;
+  const staticFileExtensions = /\.(jpg|jpeg|gif|png|svg|ico|webp|woff|woff2|ttf|eot)$/i;
   if (staticFileExtensions.test(pathname) || pathname.startsWith('/_next/')) {
     return NextResponse.next();
   }
@@ -18,11 +18,15 @@ export function proxy(req: NextRequest) {
   // Check if this is a Vercel preview/deployment domain
   const isVercelDomain = hostname.includes("vercel.app") || hostname.includes("vercel.com");
   
+  // Check if this is the main production domain
+  const isMainDomain = hostname === "bringthemenu.com" || hostname === "www.bringthemenu.com";
+  
   // Prevent redirecting for:
   // - Main domain (bringthemenu.com, www.bringthemenu.com)
   // - Localhost
   // - Vercel preview/deployment domains (show landing page, not restaurant page)
   if (
+    !isMainDomain &&
     subdomain !== "www" && 
     subdomain !== "bringthemenu" && 
     subdomain !== "localhost" &&

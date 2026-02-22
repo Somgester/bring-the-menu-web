@@ -15,6 +15,7 @@ export default function Home() {
   const { user, restaurant, loading } = useAuth();
 
   // Show loading state while checking authentication
+  // If Firebase is not configured, loading will be false and we'll show landing page
   if (loading) {
     return <LoadingSpinner />;
   }
@@ -24,6 +25,6 @@ export default function Home() {
     return <Dashboard />;
   }
 
-  // Show landing page for non-logged-in users
+  // Show landing page for non-logged-in users or if Firebase is not configured
   return <LandingPage />;
 }

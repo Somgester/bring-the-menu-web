@@ -39,26 +39,57 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, async (user) => {
-      setUser(user);
-      
-      if (user) {
-        // Fetch restaurant data when user is logged in
-        try {
-          const restaurantData = await getRestaurantByUserId(user.uid);
-          setRestaurant(restaurantData);
-        } catch (error) {
-          console.error("Error fetching restaurant:", error);
-          setRestaurant(null);
-        }
-      } else {
+    // Check if Firebase is configured before trying to use it
+    const firebaseConfig = {
+      apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
+      projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
+    };
+
+    // If Firebase is not configured, skip auth check and show landing page
+    if (!firebaseConfig.apiKey || !firebaseConfig.projectId) {
+      console.warn("Firebase not configured - showing landing page");
+      setLoading(false);
+      setUser(null);
+      setRestaurant(null);
+      return;
+    }
+
+    try {
+      // Only use auth if Firebase is configured
+      if (!auth || !firebaseConfig.apiKey) {
+        setLoading(false);
+        setUser(null);
         setRestaurant(null);
+        return;
       }
       
-      setLoading(false);
-    });
+      const unsubscribe = onAuthStateChanged(auth, async (user) => {
+        setUser(user);
+        
+        if (user) {
+          // Fetch restaurant data when user is logged in
+          try {
+            const restaurantData = await getRestaurantByUserId(user.uid);
+            setRestaurant(restaurantData);
+          } catch (error) {
+            console.error("Error fetching restaurant:", error);
+            setRestaurant(null);
+          }
+        } else {
+          setRestaurant(null);
+        }
+        
+        setLoading(false);
+      });
 
-    return () => unsubscribe();
+      return () => unsubscribe();
+    } catch (error) {
+      console.error("Error initializing auth:", error);
+      // If auth fails, still show landing page
+      setLoading(false);
+      setUser(null);
+      setRestaurant(null);
+    }
   }, []);
 
   /**
