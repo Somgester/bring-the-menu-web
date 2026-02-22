@@ -7,7 +7,7 @@ import { Textarea } from "@/components/ui/textarea"
 import { Label } from "@/components/ui/label"
 import { Switch } from "@/components/ui/switch"
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
-import { PlusCircle, Pencil, Trash, Loader2 } from "lucide-react"
+import { PlusCircle, Pencil, Trash, Loader2, Eye, Upload, Link as LinkIcon } from "lucide-react"
 import Image from "next/image"
 import { useAuth } from "@/hooks/useAuth"
 import {
@@ -18,6 +18,17 @@ import {
   MenuItem as DBMenuItem,
 } from "@/lib/firebase/firestore"
 import { toast } from "sonner"
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog"
+import { MenuPreview } from "@/components/menu/MenuPreview"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { fetchImageFromSearch } from "@/lib/utils/imageSearch"
 
 export function MenuEditor() {
   const { restaurant } = useAuth()
@@ -34,6 +45,7 @@ export function MenuEditor() {
   })
   const [editingItemId, setEditingItemId] = useState<string | null>(null)
   const [saving, setSaving] = useState(false)
+  const [previewOpen, setPreviewOpen] = useState(false)
 
   // Load menu items from database
   useEffect(() => {
@@ -81,8 +93,27 @@ export function MenuEditor() {
 
     try {
       setSaving(true)
+      
+      // If no image provided, fetch one automatically based on item name
+      let imageUrl = newItem.imageUrl
+      if (!imageUrl || imageUrl.trim() === "") {
+        toast.loading("Fetching image...", { id: "fetch-image" })
+        try {
+          // Create search query: item name + category for better results
+          const searchQuery = `${newItem.name} ${categoryName} food`.trim()
+          imageUrl = await fetchImageFromSearch(searchQuery)
+          toast.success("Image fetched automatically", { id: "fetch-image" })
+        } catch (error) {
+          console.error("Error fetching image:", error)
+          toast.error("Failed to fetch image, using placeholder", { id: "fetch-image" })
+          // Use placeholder as fallback
+          imageUrl = `https://via.placeholder.com/800x600/cccccc/666666?text=${encodeURIComponent(newItem.name)}`
+        }
+      }
+      
       const itemData = {
         ...newItem,
+        imageUrl,
         category: categoryName,
         available: true,
       }
@@ -175,10 +206,32 @@ export function MenuEditor() {
     )
   }
 
+  // Get all menu items for preview (flatten categories)
+  const allMenuItems = Object.values(categories).flat()
+
   return (
     <div className="space-y-4">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-4">
         <h2 className="text-xl font-semibold">Manage Menu</h2>
+        <Dialog open={previewOpen} onOpenChange={setPreviewOpen}>
+          <DialogTrigger asChild>
+            <Button variant="outline" className="flex items-center gap-2">
+              <Eye className="h-4 w-4" />
+              Preview Menu
+            </Button>
+          </DialogTrigger>
+          <DialogContent className="max-w-7xl max-h-[95vh] overflow-y-auto p-0">
+            <DialogHeader className="px-6 pt-6 pb-4">
+              <DialogTitle>Menu Preview</DialogTitle>
+              <DialogDescription>
+                See how your menu appears to customers. Unavailable items are shown with reduced opacity.
+              </DialogDescription>
+            </DialogHeader>
+            <div className="px-6 pb-6">
+              <MenuPreview items={allMenuItems} restaurantName={restaurant?.name} />
+            </div>
+          </DialogContent>
+        </Dialog>
       </div>
       <div className="flex flex-col sm:flex-row gap-2 mb-4">
         <Input
@@ -306,23 +359,119 @@ export function MenuEditor() {
                   rows={3}
                 />
               </div>
-              <div className="flex items-center space-x-2">
-                <Input
-                  type="file"
-                  accept="image/*"
-                  onChange={(e) => {
-                    const file = e.target.files?.[0]
-                    if (file) {
-                      const reader = new FileReader()
-                      reader.onloadend = () => {
-                        setNewItem({ ...newItem, imageUrl: reader.result as string })
-                      }
-                      reader.readAsDataURL(file)
-                    }
-                  }}
-                />
+              <div>
+                <Label>Item Image</Label>
+                <Tabs defaultValue="upload" className="mt-2">
+                  <TabsList className="grid w-full grid-cols-2">
+                    <TabsTrigger value="upload" className="flex items-center gap-2">
+                      <Upload className="h-4 w-4" />
+                      Upload
+                    </TabsTrigger>
+                    <TabsTrigger value="url" className="flex items-center gap-2">
+                      <LinkIcon className="h-4 w-4" />
+                      Paste URL
+                    </TabsTrigger>
+                  </TabsList>
+                  <TabsContent value="upload" className="mt-3">
+                    <Input
+                      type="file"
+                      accept="image/*"
+                      onChange={(e) => {
+                        const file = e.target.files?.[0]
+                        if (file) {
+                          // Validate file size (max 5MB)
+                          if (file.size > 5 * 1024 * 1024) {
+                            toast.error("Image size should be less than 5MB")
+                            return
+                          }
+                          // Validate file type
+                          if (!file.type.startsWith("image/")) {
+                            toast.error("Please select a valid image file")
+                            return
+                          }
+                          const reader = new FileReader()
+                          reader.onloadend = () => {
+                            setNewItem({ ...newItem, imageUrl: reader.result as string })
+                            toast.success("Image loaded successfully")
+                          }
+                          reader.onerror = () => {
+                            toast.error("Failed to load image")
+                          }
+                          reader.readAsDataURL(file)
+                        }
+                      }}
+                      className="w-full"
+                    />
+                  </TabsContent>
+                  <TabsContent value="url" className="mt-3">
+                    <div className="space-y-2">
+                      <Input
+                        type="url"
+                        placeholder="https://example.com/image.jpg"
+                        value={newItem.imageUrl && (newItem.imageUrl.startsWith("http") || newItem.imageUrl.startsWith("https")) ? newItem.imageUrl : ""}
+                        onChange={(e) => {
+                          const url = e.target.value.trim()
+                          if (url) {
+                            setNewItem({ ...newItem, imageUrl: url })
+                          } else {
+                            setNewItem({ ...newItem, imageUrl: "" })
+                          }
+                        }}
+                        onBlur={(e) => {
+                          const url = e.target.value.trim()
+                          if (url) {
+                            try {
+                              new URL(url)
+                              // Validate it's an image URL (optional check)
+                              const imageExtensions = [".jpg", ".jpeg", ".png", ".gif", ".webp", ".svg"]
+                              const hasImageExtension = imageExtensions.some((ext) => 
+                                url.toLowerCase().includes(ext)
+                              ) || url.match(/\.(jpg|jpeg|png|gif|webp|svg)/i)
+                              
+                              // Also allow URLs without extension (e.g., CDN URLs, API endpoints)
+                              if (!hasImageExtension && !url.includes("data:image")) {
+                                // Just warn, don't block - some URLs don't have extensions
+                                console.log("URL might not be an image, but allowing it")
+                              }
+                            } catch {
+                              toast.error("Please enter a valid URL")
+                              setNewItem({ ...newItem, imageUrl: "" })
+                            }
+                          }
+                        }}
+                        className="w-full"
+                      />
+                      <p className="text-xs text-muted-foreground">
+                        Paste an image URL (e.g., from Imgur, Cloudinary, or any image hosting service)
+                      </p>
+                    </div>
+                  </TabsContent>
+                </Tabs>
                 {newItem.imageUrl && (
-                  <Image src={newItem.imageUrl} alt="Preview" width={64} height={64} className="object-cover rounded" />
+                  <div className="mt-3 flex items-center gap-3">
+                    <div className="relative">
+                      <Image 
+                        src={newItem.imageUrl} 
+                        alt="Preview" 
+                        width={80} 
+                        height={80} 
+                        className="object-cover rounded border"
+                        onError={() => {
+                          toast.error("Failed to load image. Please check the URL.")
+                          setNewItem({ ...newItem, imageUrl: "" })
+                        }}
+                      />
+                    </div>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setNewItem({ ...newItem, imageUrl: "" })}
+                      className="text-destructive"
+                    >
+                      Remove
+                    </Button>
+                  </div>
                 )}
               </div>
               <Button

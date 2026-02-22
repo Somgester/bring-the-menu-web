@@ -11,6 +11,27 @@ const nextConfig: NextConfig = {
     NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID: process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID,
     NEXT_PUBLIC_FIREBASE_APP_ID: process.env.NEXT_PUBLIC_FIREBASE_APP_ID,
   },
+  images: {
+    // Allow images from all external domains
+    // Using remotePatterns with wildcard to allow any HTTPS domain
+    remotePatterns: [
+      {
+        protocol: "https",
+        hostname: "**",
+      },
+      {
+        protocol: "http",
+        hostname: "**",
+      },
+    ],
+    // Allow data URLs (base64 images from file uploads)
+    // These are automatically allowed by Next.js
+    dangerouslyAllowSVG: true,
+    contentDispositionType: "attachment",
+    contentSecurityPolicy: "default-src 'self'; script-src 'none'; sandbox;",
+    // Disable image optimization for external images if needed
+    // unoptimized: false, // Keep optimization enabled for better performance
+  },
 };
 
 export default nextConfig;
