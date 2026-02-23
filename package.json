@@ -7,7 +7,9 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
-    "firebase": "npx firebase-tools"
+    "firebase": "npx firebase-tools",
+    "deploy": "npx vercel --prod",
+    "deploy:preview": "npx vercel"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.2.2",

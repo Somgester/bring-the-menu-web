@@ -226,6 +226,7 @@ export function Profile() {
                 type="email"
                 value={formData.email}
                 onChange={handleInputChange}
+                autoComplete="email"
                 required
               />
             </div>

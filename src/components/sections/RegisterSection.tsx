@@ -115,6 +115,7 @@ export function RegisterSection() {
                   placeholder="Restaurant Name" 
                   type="text" 
                   required
+                  autoComplete="organization"
                   className="h-14 rounded-xl border-2 border-green-100 focus:border-green-DEFAULT text-base"
                   aria-label="Restaurant name"
                 />
@@ -144,6 +145,7 @@ export function RegisterSection() {
                   type="password" 
                   required
                   minLength={6}
+                  autoComplete="new-password"
                   className="h-14 rounded-xl border-2 border-green-100 focus:border-green-DEFAULT text-base"
                   aria-label="Password"
                 />

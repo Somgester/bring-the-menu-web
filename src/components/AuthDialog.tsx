@@ -218,7 +218,7 @@ export const AuthDialog = ({ children, showDialog, onOpenChange }: AuthDialogPro
                   <FormItem>
                     <FormLabel>Email</FormLabel>
                     <FormControl>
-                      <Input placeholder="Enter your email" {...field} />
+                      <Input placeholder="Enter your email" autoComplete="email" {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -231,7 +231,7 @@ export const AuthDialog = ({ children, showDialog, onOpenChange }: AuthDialogPro
                   <FormItem>
                     <FormLabel>Password</FormLabel>
                     <FormControl>
-                      <Input type="password" placeholder="Enter your password" {...field} />
+                      <Input type="password" placeholder="Enter your password" autoComplete="current-password" {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -291,7 +291,7 @@ export const AuthDialog = ({ children, showDialog, onOpenChange }: AuthDialogPro
                   <FormItem>
                     <FormLabel>Restaurant Name</FormLabel>
                     <FormControl>
-                      <Input placeholder="Enter your restaurant name" {...field} />
+                      <Input placeholder="Enter your restaurant name" autoComplete="organization" {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -304,7 +304,7 @@ export const AuthDialog = ({ children, showDialog, onOpenChange }: AuthDialogPro
                   <FormItem>
                     <FormLabel>Email</FormLabel>
                     <FormControl>
-                      <Input placeholder="Enter your email" {...field} />
+                      <Input placeholder="Enter your email" autoComplete="email" {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -317,7 +317,7 @@ export const AuthDialog = ({ children, showDialog, onOpenChange }: AuthDialogPro
                   <FormItem>
                     <FormLabel>Password</FormLabel>
                     <FormControl>
-                      <Input type="password" placeholder="Create a password" {...field} />
+                      <Input type="password" placeholder="Create a password" autoComplete="new-password" {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -330,7 +330,7 @@ export const AuthDialog = ({ children, showDialog, onOpenChange }: AuthDialogPro
                   <FormItem>
                     <FormLabel>Confirm Password</FormLabel>
                     <FormControl>
-                      <Input type="password" placeholder="Confirm your password" {...field} />
+                      <Input type="password" placeholder="Confirm your password" autoComplete="new-password" {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
