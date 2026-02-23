@@ -43,8 +43,9 @@ export default function middleware(req: NextRequest) {
 }
 
 export const config = {
+  runtime: "edge",
   matcher: [
     // Match all paths except static files and api routes
-    '/((?!api|_next/static|_next/image|favicon.ico|.*\\.(?:jpg|jpeg|gif|png|svg|ico|webp|woff|woff2|ttf|eot)).*)',
+    "/((?!api|_next/static|_next/image|favicon.ico|.*\\.(?:jpg|jpeg|gif|png|svg|ico|webp|woff|woff2|ttf|eot)).*)",
   ],
 };
