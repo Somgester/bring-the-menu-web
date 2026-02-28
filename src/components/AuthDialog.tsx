@@ -124,6 +124,15 @@ export const AuthDialog = ({ children, showDialog, onOpenChange }: AuthDialogPro
     },
   });
 
+  // Reset forms when switching modes
+  useEffect(() => {
+    if (mode === 'login') {
+      signupForm.reset();
+    } else {
+      loginForm.reset();
+    }
+  }, [mode, loginForm, signupForm]);
+
   const onLoginSubmit = async (data: LoginFormValues) => {
     setIsLoading(true);
     try {
@@ -209,7 +218,7 @@ export const AuthDialog = ({ children, showDialog, onOpenChange }: AuthDialogPro
         </DialogHeader>
 
         {mode === 'login' ? (
-          <Form {...loginForm}>
+          <Form {...loginForm} key="login-form">
             <form onSubmit={loginForm.handleSubmit(onLoginSubmit)} className="space-y-4">
               <FormField
                 control={loginForm.control}
@@ -282,7 +291,7 @@ export const AuthDialog = ({ children, showDialog, onOpenChange }: AuthDialogPro
             </form>
           </Form>
         ) : (
-          <Form {...signupForm}>
+          <Form {...signupForm} key="signup-form">
             <form onSubmit={signupForm.handleSubmit(onSignupSubmit)} className="space-y-4">
               <FormField
                 control={signupForm.control}
