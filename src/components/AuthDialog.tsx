@@ -83,26 +83,23 @@ type SignupFormValues = z.infer<typeof signupSchema>;
 
 interface AuthDialogProps {
   children?: React.ReactNode;
-  showDialog?: boolean;
-  onOpenChange?: (open: boolean) => void;
 }
 
-export const AuthDialog = ({ children, showDialog, onOpenChange }: AuthDialogProps) => {
+export const AuthDialog = ({ children }: AuthDialogProps) => {
   const [mode, setMode] = useState<'login' | 'signup'>('login');
   const [isLoading, setIsLoading] = useState(false);
   const [isGoogleLoading, setIsGoogleLoading] = useState(false);
-  const [shouldRedirect, setShouldRedirect] = useState(false);
   const { signIn, signUp, signInWithGoogle, restaurant } = useAuth();
+  const [open, setOpen] = useState(false);
+
   const router = useRouter();
 
   // Handle redirect when restaurant data is available
   useEffect(() => {
-    if (shouldRedirect && restaurant?.id) {
-      // Redirect to home page, which will automatically redirect to dashboard
+    if (restaurant?.id) {
       router.push("/");
-      setShouldRedirect(false);
     }
-  }, [shouldRedirect, restaurant, router]);
+  }, [restaurant, router]);
 
   // Login form
   const loginForm = useForm<LoginFormValues>({
@@ -141,8 +138,7 @@ export const AuthDialog = ({ children, showDialog, onOpenChange }: AuthDialogPro
         password: data.password,
       });
       toast.success('Login successful!');
-      onOpenChange?.(false);
-      setShouldRedirect(true);
+      setOpen(false);
     } catch (error: unknown) {
       const errorMessage =
         error instanceof AuthError
@@ -165,8 +161,6 @@ export const AuthDialog = ({ children, showDialog, onOpenChange }: AuthDialogPro
         restaurantName: data.restaurantName,
       });
       toast.success('Account created successfully!');
-      onOpenChange?.(false);
-      setShouldRedirect(true);
     } catch (error: unknown) {
       const errorMessage =
         error instanceof AuthError
@@ -185,8 +179,6 @@ export const AuthDialog = ({ children, showDialog, onOpenChange }: AuthDialogPro
     try {
       await signInWithGoogle();
       toast.success('Signed in with Google successfully!');
-      onOpenChange?.(false);
-      setShouldRedirect(true);
     } catch (error: unknown) {
       const errorMessage =
         error instanceof AuthError
@@ -201,11 +193,12 @@ export const AuthDialog = ({ children, showDialog, onOpenChange }: AuthDialogPro
   };
 
   return (
-    <Dialog open={showDialog} onOpenChange={onOpenChange}>
+    <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
         {children}
       </DialogTrigger>
-      <DialogContent className="sm:max-w-[425px]">
+      <DialogContent className="sm:max-w-[425px]"   onOpenAutoFocus={(e) => e.preventDefault()}
+      >
         <DialogHeader>
           <DialogTitle>
             {mode === 'login' ? 'Log in to your account' : 'Create an account'}

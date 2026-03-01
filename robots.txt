@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://bringthemenu.vercel.app/sitemap.xml

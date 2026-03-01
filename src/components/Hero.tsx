@@ -51,11 +51,21 @@ const Hero = () => {
               Transform how your customers experience dining with a seamless, interactive digital menu solution. No more paper menus – just a simple scan to place orders directly from their table.
             </p>
             <div className="flex flex-col sm:flex-row gap-4">
-              <Button size="lg" className="btn-gradient text-white group transition-all">
-                Get Started 
+              <Button
+                size="lg"
+                className="btn-gradient text-white group transition-all opacity-100 pointer-events-auto"
+                aria-label="Get Started"
+              >
+                Get Started
                 <ArrowRight className="ml-2 group-hover:translate-x-1 transition-transform" size={18} />
               </Button>
-              <Button size="lg" variant="outline" className="border-purple-DEFAULT text-purple-DEFAULT hover:bg-purple-light/20">
+
+              <Button
+                size="lg"
+                variant="outline"
+                className="btn-outline border-purple-DEFAULT text-purple-DEFAULT hover:bg-purple-light/20 opacity-100 pointer-events-auto"
+                aria-label="Discover the Future of Dining"
+              >
                 Discover the Future of Dining
               </Button>
             </div>

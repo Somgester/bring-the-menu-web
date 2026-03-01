@@ -14,7 +14,6 @@ interface HeaderProps {
 }
 
 export function Header({ onScrollToSection }: HeaderProps) {
-  const [isLoginDialogOpen, setIsLoginDialogOpen] = useState(false);
   const { user, restaurant, logout } = useAuth();
   const router = useRouter();
 
@@ -85,7 +84,7 @@ export function Header({ onScrollToSection }: HeaderProps) {
           </>
         ) : (
           <>
-            <AuthDialog showDialog={isLoginDialogOpen} onOpenChange={setIsLoginDialogOpen}>
+            <AuthDialog>
               <Button
                 variant="outline"
                 className="text-sm font-medium text-green-DEFAULT hover:text-green-medium transition-colors border-green-200 hover:border-green-300 rounded-full px-6 py-2 flex items-center gap-2"
